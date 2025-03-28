@@ -2,7 +2,7 @@
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mic, MicOff, Play, Pause, Stop } from "lucide-react";
+import { Mic, MicOff, Play, Pause, Square } from "lucide-react";
 
 const AudioRecorder = () => {
   const [isRecording, setIsRecording] = useState(false);
