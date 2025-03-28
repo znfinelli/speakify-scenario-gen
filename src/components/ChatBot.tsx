@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageCircle, X, SendHorizonal, Bot } from "lucide-react";
 import {
@@ -46,10 +44,15 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
 
+  const speakText = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US"; // Adjust language as needed
+    window.speechSynthesis.speak(utterance);
+  };
+
   const handleSendMessage = () => {
     if (!input.trim()) return;
 
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       text: input,
@@ -61,7 +64,6 @@ const ChatBot = () => {
     setInput("");
     setIsTyping(true);
 
-    // Simulate bot response
     setTimeout(() => {
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
@@ -69,9 +71,10 @@ const ChatBot = () => {
         sender: "bot",
         timestamp: new Date(),
       };
-      
+
       setMessages((prev) => [...prev, botResponse]);
       setIsTyping(false);
+      speakText(botResponse.text); // Make the bot speak the response
     }, 1500);
   };
 
@@ -103,13 +106,15 @@ const ChatBot = () => {
               </Button>
             </DrawerClose>
           </DrawerHeader>
-          
-          <div className="flex-1 overflow-y-auto p-4 h-[65vh]">
-            <div className="flex justify-center mb-4">
+
+          <div className="flex-1 overflow-y-auto p-4 h-[65vh] flex">
+            {/* Animated person on the left */}
+            <div className="w-1/3 flex justify-center items-center">
               <AnimatedBot speaking={isTyping} />
             </div>
-            
-            <div className="space-y-4">
+
+            {/* Chat messages on the right */}
+            <div className="w-2/3 space-y-4">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -138,9 +143,18 @@ const ChatBot = () => {
                 <div className="flex justify-start">
                   <div className="bg-gray-100 text-gray-800 rounded-lg px-4 py-2">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "600ms" }}></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0ms" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "300ms" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "600ms" }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -148,7 +162,7 @@ const ChatBot = () => {
               <div ref={messagesEndRef} />
             </div>
           </div>
-          
+
           <DrawerFooter className="border-t p-4">
             <div className="flex items-center space-x-2">
               <Textarea
@@ -158,8 +172,8 @@ const ChatBot = () => {
                 placeholder="Type your message..."
                 className="flex-1 min-h-[60px] max-h-32"
               />
-              <Button 
-                onClick={handleSendMessage} 
+              <Button
+                onClick={handleSendMessage}
                 className="h-[60px] bg-blue-600 hover:bg-blue-700"
               >
                 <SendHorizonal size={20} />
