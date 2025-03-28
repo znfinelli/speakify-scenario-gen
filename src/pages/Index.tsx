@@ -3,6 +3,8 @@ import React from "react";
 import ScenarioGenerator from "@/components/ScenarioGenerator";
 
 const Index = () => {
+  const currentYear = new Date().getFullYear();
+  
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <div className="container mx-auto px-4 py-8">
@@ -18,7 +20,7 @@ const Index = () => {
         </main>
         
         <footer className="mt-16 text-center text-gray-500 text-sm">
-          <p>© 2023 Speakify - Practice speaking in any language</p>
+          <p>© {currentYear} Speakify - Practice speaking in any language</p>
         </footer>
       </div>
     </div>
