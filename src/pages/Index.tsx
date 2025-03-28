@@ -1,6 +1,7 @@
 
 import React from "react";
 import ScenarioGenerator from "@/components/ScenarioGenerator";
+import ChatBot from "@/components/ChatBot";
 
 const Index = () => {
   const currentYear = new Date().getFullYear();
@@ -23,6 +24,9 @@ const Index = () => {
           <p>© {currentYear} Speakify - Practice speaking in any language</p>
         </footer>
       </div>
+      
+      {/* Chat bot component */}
+      <ChatBot />
     </div>
   );
 };
