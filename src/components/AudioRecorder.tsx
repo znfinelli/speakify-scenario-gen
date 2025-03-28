@@ -8,6 +8,7 @@ const AudioRecorder = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
@@ -29,6 +30,10 @@ const AudioRecorder = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         setRecordedAudio(audioBlob);
         
+        // Create and store the audio URL
+        const url = URL.createObjectURL(audioBlob);
+        setAudioUrl(url);
+        
         // Stop all tracks in the stream
         stream.getTracks().forEach(track => track.stop());
       };
@@ -49,16 +54,23 @@ const AudioRecorder = () => {
   };
 
   const playRecording = () => {
-    if (recordedAudio) {
-      const audioURL = URL.createObjectURL(recordedAudio);
-      const audioPlayer = new Audio(audioURL);
-      audioPlayerRef.current = audioPlayer;
+    if (audioUrl) {
+      // Create a new audio element or use the existing one
+      if (!audioPlayerRef.current) {
+        audioPlayerRef.current = new Audio(audioUrl);
+      } else {
+        audioPlayerRef.current.src = audioUrl;
+      }
       
-      audioPlayer.onended = () => {
+      audioPlayerRef.current.onended = () => {
         setIsPlaying(false);
       };
       
-      audioPlayer.play();
+      // Play the audio
+      audioPlayerRef.current.play().catch(err => {
+        console.error("Error playing audio:", err);
+      });
+      
       setIsPlaying(true);
     }
   };
@@ -123,6 +135,16 @@ const AudioRecorder = () => {
                 >
                   <Pause className="w-4 h-4" /> Pause
                 </Button>
+              )}
+              
+              {/* Add an audio element for direct playback as a fallback */}
+              {audioUrl && (
+                <audio 
+                  className="hidden" 
+                  controls 
+                  src={audioUrl} 
+                  id="recorded-audio"
+                />
               )}
             </div>
           )}
