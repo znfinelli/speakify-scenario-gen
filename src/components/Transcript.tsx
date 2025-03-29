@@ -29,15 +29,21 @@ const Transcript: React.FC<TranscriptProps> = ({ text, onPlay, apiKey }) => {
   const [definitions, setDefinitions] = useState<Record<string, WordDefinition>>({});
 
   const getDefinition = async (word: string) => {
+    // Clean the word from punctuation
+    const cleanWord = word.replace(/[.,!?;:'"()]/g, '');
+    
+    // Skip if word is empty after cleaning
+    if (!cleanWord) return;
+    
     // Skip if we already have a definition or are loading
-    if (definitions[word] && (definitions[word].definition || definitions[word].loading)) {
+    if (definitions[cleanWord] && (definitions[cleanWord].definition || definitions[cleanWord].loading)) {
       return;
     }
 
     // Set loading state
     setDefinitions((prev) => ({
       ...prev,
-      [word]: { word, definition: null, loading: true },
+      [cleanWord]: { word: cleanWord, definition: null, loading: true },
     }));
 
     try {
@@ -57,7 +63,7 @@ const Transcript: React.FC<TranscriptProps> = ({ text, onPlay, apiKey }) => {
             },
             {
               role: "user",
-              content: `Define the word "${word}" in 10 words or less. Just provide the definition without any additional text.`,
+              content: `Define the word "${cleanWord}" in 10 words or less. Just provide the definition without any additional text.`,
             },
           ],
           max_tokens: 50,
@@ -74,18 +80,19 @@ const Transcript: React.FC<TranscriptProps> = ({ text, onPlay, apiKey }) => {
       // Store the definition
       setDefinitions((prev) => ({
         ...prev,
-        [word]: { word, definition, loading: false },
+        [cleanWord]: { word: cleanWord, definition, loading: false },
       }));
     } catch (error) {
       console.error("Error getting definition:", error);
       // Update with error state
       setDefinitions((prev) => ({
         ...prev,
-        [word]: { word, definition: "Failed to load definition", loading: false },
+        [cleanWord]: { word: cleanWord, definition: "Failed to load definition", loading: false },
       }));
     }
   };
 
+  // Always render the control even if transcript is hidden
   if (!showTranscript) {
     return (
       <div className="fixed top-4 right-4 z-40 bg-white p-3 rounded-lg shadow-md">
@@ -98,6 +105,29 @@ const Transcript: React.FC<TranscriptProps> = ({ text, onPlay, apiKey }) => {
           <Label htmlFor="show-transcript">Show Transcript</Label>
         </div>
       </div>
+    );
+  }
+
+  // Handle empty text case
+  if (!text.trim()) {
+    return (
+      <Card className="fixed top-4 right-4 z-40 w-80 shadow-lg">
+        <CardContent className="p-4">
+          <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-transcript"
+                checked={showTranscript}
+                onCheckedChange={setShowTranscript}
+              />
+              <Label htmlFor="show-transcript">Transcript</Label>
+            </div>
+          </div>
+          <div className="text-sm bg-gray-50 p-3 rounded leading-relaxed">
+            No transcript available yet. Start a conversation to see it here.
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
