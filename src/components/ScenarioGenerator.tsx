@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import LanguageSelector from "./LanguageSelector";
 import ScenarioDisplay from "./ScenarioDisplay";
 import AudioRecorder from "./AudioRecorder";
 import { generateScenario } from "@/utils/scenarioUtils";
-import { generateAIScenario } from "@/utils/aiService";
+import { generateAIScenario, generateImage } from "@/utils/aiService";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ScenarioGenerator = () => {
@@ -18,7 +17,9 @@ const ScenarioGenerator = () => {
   const [category, setCategory] = useState("daily life");
   const [customCategory, setCustomCategory] = useState("");
   const [scenario, setScenario] = useState(null);
+  const [scenarioImage, setScenarioImage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [activeTab, setActiveTab] = useState("generate");
   const [useAI, setUseAI] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -29,8 +30,8 @@ const ScenarioGenerator = () => {
       return;
     }
     
-    if (category === "custom" && !customCategory) {
-      toast.error("Please enter a custom topic");
+    if (category === "other" && !customCategory) {
+      toast.error("Please enter a custom category");
       return;
     }
     
@@ -38,9 +39,8 @@ const ScenarioGenerator = () => {
     
     try {
       if (useAI && apiKey) {
-        // Use AI to generate scenario
-        const effectiveCategory = category === "custom" ? customCategory : category;
-        
+        // Use AI to generate scenario with the effective category
+        const effectiveCategory = category === "other" ? customCategory : category;
         const aiScenario = await generateAIScenario(apiKey, {
           language,
           level,
@@ -50,6 +50,9 @@ const ScenarioGenerator = () => {
         if (aiScenario) {
           setScenario(aiScenario);
           setActiveTab("practice");
+          
+          // Generate an image for the scenario
+          await generateScenarioImage(aiScenario.title);
         }
       } else {
         // Use predefined templates
@@ -64,6 +67,23 @@ const ScenarioGenerator = () => {
       toast.error("Failed to generate scenario. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const generateScenarioImage = async (title: string) => {
+    if (!apiKey) return;
+    
+    setIsGeneratingImage(true);
+    try {
+      const imageUrl = await generateImage(apiKey, title);
+      if (imageUrl) {
+        setScenarioImage(imageUrl);
+      }
+    } catch (error) {
+      console.error("Image generation error:", error);
+      toast.error("Failed to generate image. Using placeholder instead.");
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
 
@@ -126,7 +146,7 @@ const ScenarioGenerator = () => {
               <Button
                 onClick={handleGenerateScenario}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg"
-                disabled={!language || isLoading}
+                disabled={!language || isLoading || (category === "other" && !customCategory)}
               >
                 {isLoading ? "Generating..." : "Generate Scenario"}
               </Button>
@@ -139,7 +159,8 @@ const ScenarioGenerator = () => {
                 <ScenarioDisplay 
                   scenario={scenario} 
                   apiKey={apiKey}
-                  language={language}
+                  scenarioImage={scenarioImage}
+                  isGeneratingImage={isGeneratingImage}
                 />
                 <AudioRecorder />
                 <div className="flex justify-between mt-6">
