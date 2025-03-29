@@ -1,8 +1,17 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { Play } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ScenarioDisplayProps {
   scenario: {
@@ -12,22 +21,87 @@ interface ScenarioDisplayProps {
     vocabulary: { word: string; translation: string }[];
     hints: string[];
   };
+  apiKey: string;
 }
 
-const ScenarioDisplay = ({ scenario }: ScenarioDisplayProps) => {
-  const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
+const ScenarioDisplay = ({ scenario, apiKey }: ScenarioDisplayProps) => {
+  const [showTranscript, setShowTranscript] = useState(true);
   const [showHints, setShowHints] = useState(false);
   const [showVocab, setShowVocab] = useState(false);
+  const [definitions, setDefinitions] = useState<Record<string, { word: string; definition: string | null; loading: boolean }>>({});
+  
+  // Always use the first prompt only
+  const promptText = scenario.prompts[0];
 
-  const nextPrompt = () => {
-    if (currentPromptIndex < scenario.prompts.length - 1) {
-      setCurrentPromptIndex(currentPromptIndex + 1);
+  const speakPrompt = () => {
+    if (promptText) {
+      const utterance = new SpeechSynthesisUtterance(promptText);
+      utterance.lang = "en-US"; // Adjust language as needed
+      window.speechSynthesis.speak(utterance);
     }
   };
 
-  const prevPrompt = () => {
-    if (currentPromptIndex > 0) {
-      setCurrentPromptIndex(currentPromptIndex - 1);
+  const getDefinition = async (word: string) => {
+    // Clean the word from punctuation
+    const cleanWord = word.replace(/[.,!?;:'"()]/g, '').toLowerCase();
+    
+    // Skip if word is empty after cleaning or too short
+    if (!cleanWord || cleanWord.length <= 2) return;
+    
+    // Skip if we already have a definition or are loading
+    if (definitions[cleanWord] && (definitions[cleanWord].definition || definitions[cleanWord].loading)) {
+      return;
+    }
+
+    // Set loading state
+    setDefinitions((prev) => ({
+      ...prev,
+      [cleanWord]: { word: cleanWord, definition: null, loading: true },
+    }));
+
+    try {
+      // Call OpenAI API to get definition
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are a helpful assistant that provides concise definitions of words.",
+            },
+            {
+              role: "user",
+              content: `Define the word "${cleanWord}" in 10 words or less. Just provide the definition without any additional text.`,
+            },
+          ],
+          max_tokens: 50,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get definition");
+      }
+
+      const data = await response.json();
+      const definition = data.choices[0].message.content.trim();
+
+      // Store the definition
+      setDefinitions((prev) => ({
+        ...prev,
+        [cleanWord]: { word: cleanWord, definition, loading: false },
+      }));
+    } catch (error) {
+      console.error("Error getting definition:", error);
+      // Update with error state
+      setDefinitions((prev) => ({
+        ...prev,
+        [cleanWord]: { word: cleanWord, definition: "Failed to load definition", loading: false },
+      }));
     }
   };
 
@@ -40,28 +114,56 @@ const ScenarioDisplay = ({ scenario }: ScenarioDisplayProps) => {
 
       <Card className="bg-blue-50">
         <CardContent className="p-6">
-          <div className="mb-4 text-sm text-gray-500">
-            Prompt {currentPromptIndex + 1} of {scenario.prompts.length}
-          </div>
-          <p className="text-xl font-medium">{scenario.prompts[currentPromptIndex]}</p>
-          
-          <div className="flex justify-between mt-6">
-            <Button
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-transcript"
+                checked={showTranscript}
+                onCheckedChange={setShowTranscript}
+              />
+              <Label htmlFor="show-transcript">Show Transcript</Label>
+            </div>
+            <Button 
+              size="sm"
               variant="outline"
-              onClick={prevPrompt}
-              disabled={currentPromptIndex === 0}
-              className="text-sm"
+              className="h-8 w-8 p-0"
+              onClick={speakPrompt}
+              title="Play prompt"
             >
-              Previous
-            </Button>
-            <Button
-              onClick={nextPrompt}
-              disabled={currentPromptIndex === scenario.prompts.length - 1}
-              className="bg-blue-600 hover:bg-blue-700 text-sm"
-            >
-              Next <ArrowRight className="ml-1 h-4 w-4" />
+              <Play size={16} />
             </Button>
           </div>
+          
+          {showTranscript && (
+            <div className="text-sm bg-gray-50 p-3 rounded leading-relaxed mb-4 max-h-60 overflow-y-auto">
+              {promptText ? (
+                promptText.split(/\s+/).filter(word => word.trim().length > 0).map((word, index) => (
+                  <HoverCard key={index} openDelay={300} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <span 
+                        className="hover:bg-blue-100 hover:text-blue-700 rounded-sm px-0.5 cursor-help inline-block"
+                        onMouseEnter={() => getDefinition(word)}
+                      >
+                        {word}{' '}
+                      </span>
+                    </HoverCardTrigger>
+                    <HoverCardContent className="w-48 text-xs" align="center">
+                      {definitions[word.replace(/[.,!?;:'"()]/g, '').toLowerCase()]?.loading ? (
+                        <Skeleton className="h-4 w-full" />
+                      ) : (
+                        <>
+                          <p className="font-semibold mb-1">{word.replace(/[.,!?;:'"()]/g, '')}</p>
+                          <p>{definitions[word.replace(/[.,!?;:'"()]/g, '').toLowerCase()]?.definition || "Hover to load definition"}</p>
+                        </>
+                      )}
+                    </HoverCardContent>
+                  </HoverCard>
+                ))
+              ) : (
+                <p>No prompt available</p>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
       

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,29 +95,27 @@ const ScenarioGenerator = () => {
                 <Label htmlFor="useAI">Use GPT to generate scenarios</Label>
               </div>
 
-              {useAI && (
-                <div className="space-y-2">
-                  <Label htmlFor="apiKey">OpenAI API Key</Label>
-                  <Input
-                    id="apiKey"
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="sk-..."
-                    className="w-full"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Your API key is only used locally and never stored on our servers.
-                  </p>
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">OpenAI API Key</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-..."
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500">
+                  Your API key is used for both generating scenarios and word definitions.
+                </p>
+              </div>
             </div>
             
             <div className="mt-8 flex justify-center">
               <Button
                 onClick={handleGenerateScenario}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-lg"
-                disabled={!language || isLoading || (useAI && !apiKey)}
+                disabled={!language || isLoading}
               >
                 {isLoading ? "Generating..." : "Generate Scenario"}
               </Button>
@@ -128,7 +125,10 @@ const ScenarioGenerator = () => {
           <TabsContent value="practice" className="mt-4">
             {scenario && (
               <div className="space-y-8">
-                <ScenarioDisplay scenario={scenario} />
+                <ScenarioDisplay 
+                  scenario={scenario} 
+                  apiKey={apiKey}
+                />
                 <AudioRecorder />
                 <div className="flex justify-between mt-6">
                   <Button 
