@@ -1,4 +1,6 @@
 
+import { languagePrompts } from "@/data/languageData";
+
 // Mock data for scenarios based on language, level, and category
 const scenarioTemplates = {
   // Daily Life scenarios
@@ -228,8 +230,13 @@ export const generateScenario = (language: string, level: string, category: stri
   // Get base template
   const template = getTemplate(category, level);
   
-  // In a real app, we might modify the template based on the language
-  // or make an API call to a language model
+  // Create a copy of the template to avoid modifying the original
+  const scenario = { ...template };
   
-  return template;
+  // If we have language-specific prompts available, use them
+  if (languagePrompts[language] && languagePrompts[language][category]) {
+    scenario.prompts = languagePrompts[language][category];
+  }
+  
+  return scenario;
 };

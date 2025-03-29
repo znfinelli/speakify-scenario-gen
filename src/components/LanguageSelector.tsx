@@ -1,6 +1,7 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { languages, categories, proficiencyLevels } from "@/data/languageData";
 
@@ -11,6 +12,8 @@ interface LanguageSelectorProps {
   setLevel: (level: string) => void;
   category: string;
   setCategory: (category: string) => void;
+  customCategory: string;
+  setCustomCategory: (category: string) => void;
 }
 
 const LanguageSelector = ({
@@ -20,7 +23,16 @@ const LanguageSelector = ({
   setLevel,
   category,
   setCategory,
+  customCategory,
+  setCustomCategory,
 }: LanguageSelectorProps) => {
+  const [showCustomInput, setShowCustomInput] = useState(category === "custom");
+
+  const handleCategoryChange = (value: string) => {
+    setCategory(value);
+    setShowCustomInput(value === "custom");
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -63,7 +75,7 @@ const LanguageSelector = ({
         <Label htmlFor="category" className="text-gray-700">
           Conversation Category
         </Label>
-        <Select value={category} onValueChange={setCategory}>
+        <Select value={category} onValueChange={handleCategoryChange}>
           <SelectTrigger id="category" className="w-full">
             <SelectValue placeholder="Select a category" />
           </SelectTrigger>
@@ -73,9 +85,25 @@ const LanguageSelector = ({
                 {cat.label}
               </SelectItem>
             ))}
+            <SelectItem value="custom">Custom Topic</SelectItem>
           </SelectContent>
         </Select>
       </div>
+
+      {showCustomInput && (
+        <div className="space-y-2">
+          <Label htmlFor="customCategory" className="text-gray-700">
+            Custom Topic
+          </Label>
+          <Input
+            id="customCategory"
+            value={customCategory}
+            onChange={(e) => setCustomCategory(e.target.value)}
+            placeholder="Enter a custom topic"
+            className="w-full"
+          />
+        </div>
+      )}
     </div>
   );
 };

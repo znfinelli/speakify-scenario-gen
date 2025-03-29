@@ -33,3 +33,44 @@ export const categories = [
   { value: "emergencies", label: "Emergencies" },
   { value: "hobbies", label: "Hobbies & Interests" },
 ];
+
+// Define language-specific prompts to ensure they're in the correct language
+export const languagePrompts = {
+  // Spanish prompts
+  es: {
+    dailyLife: [
+      "¿A qué hora te despiertas normalmente?",
+      "Describe lo que desayunas cada día.",
+      "¿Cómo vas al trabajo o a la escuela?"
+    ],
+    travel: [
+      "¿Puedes recomendarme un buen hotel?",
+      "¿Dónde está la estación de tren más cercana?",
+      "¿Cuánto cuesta un billete de ida y vuelta?"
+    ],
+    food: [
+      "¿Me podría traer el menú, por favor?",
+      "¿Cuál es el plato especial del día?",
+      "¿Puedo pagar con tarjeta de crédito?"
+    ]
+  },
+  // French prompts
+  fr: {
+    dailyLife: [
+      "À quelle heure vous réveillez-vous habituellement ?",
+      "Décrivez ce que vous mangez au petit-déjeuner.",
+      "Comment allez-vous au travail ou à l'école ?"
+    ],
+    travel: [
+      "Pouvez-vous me recommander un bon hôtel ?",
+      "Où se trouve la gare la plus proche ?",
+      "Combien coûte un billet aller-retour ?"
+    ],
+    food: [
+      "Pourriez-vous m'apporter le menu, s'il vous plaît ?",
+      "Quel est le plat du jour ?",
+      "Puis-je payer par carte de crédit ?"
+    ]
+  }
+  // More languages can be added here following the same pattern
+};

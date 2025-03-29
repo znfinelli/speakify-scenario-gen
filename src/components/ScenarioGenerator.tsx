@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ const ScenarioGenerator = () => {
   const [language, setLanguage] = useState("");
   const [level, setLevel] = useState("beginner");
   const [category, setCategory] = useState("daily life");
+  const [customCategory, setCustomCategory] = useState("");
   const [scenario, setScenario] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("generate");
@@ -27,15 +29,22 @@ const ScenarioGenerator = () => {
       return;
     }
     
+    if (category === "custom" && !customCategory) {
+      toast.error("Please enter a custom topic");
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       if (useAI && apiKey) {
         // Use AI to generate scenario
+        const effectiveCategory = category === "custom" ? customCategory : category;
+        
         const aiScenario = await generateAIScenario(apiKey, {
           language,
           level,
-          category,
+          category: effectiveCategory,
         });
         
         if (aiScenario) {
@@ -81,6 +90,8 @@ const ScenarioGenerator = () => {
               setLevel={setLevel}
               category={category}
               setCategory={setCategory}
+              customCategory={customCategory}
+              setCustomCategory={setCustomCategory}
             />
 
             <div className="mt-6 space-y-4">
@@ -106,7 +117,7 @@ const ScenarioGenerator = () => {
                   className="w-full"
                 />
                 <p className="text-xs text-gray-500">
-                  Your API key is used for both generating scenarios and word definitions.
+                  Your API key is used for generating scenarios, word definitions, and images.
                 </p>
               </div>
             </div>
@@ -128,6 +139,7 @@ const ScenarioGenerator = () => {
                 <ScenarioDisplay 
                   scenario={scenario} 
                   apiKey={apiKey}
+                  language={language}
                 />
                 <AudioRecorder />
                 <div className="flex justify-between mt-6">
