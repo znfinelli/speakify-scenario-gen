@@ -5,7 +5,7 @@ export const languages = [
   { code: "de", name: "German" },
   { code: "it", name: "Italian" },
   { code: "pt", name: "Portuguese" },
-  { code: "zh", name: "Mandarin Chinese" },
+  { code: "zh", name: "Mandarin Chinese Simplified" },
   { code: "ja", name: "Japanese" },
   { code: "ko", name: "Korean" },
   { code: "ru", name: "Russian" },

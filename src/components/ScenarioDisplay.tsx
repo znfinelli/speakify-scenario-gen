@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ interface ScenarioDisplayProps {
   scenario: {
     title: string;
     context: string;
-    prompts: string[];
+    prompts: string[]; // Prompts will still exist in the data but won't be displayed directly
     vocabulary: { word: string; translation: string }[];
     hints: string[];
   };
@@ -19,6 +18,32 @@ const ScenarioDisplay = ({ scenario }: ScenarioDisplayProps) => {
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [showHints, setShowHints] = useState(false);
   const [showVocab, setShowVocab] = useState(false);
+  const [transcription, setTranscription] = useState<string>(""); // For OpenAI Whisper transcription
+
+  // Placeholder function to handle audio transcription
+  const handleAudioTranscription = async (audioBlob: Blob) => {
+    try {
+      // Replace this with actual OpenAI Whisper API integration
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: audioBlob,
+      });
+      const data = await response.json();
+      setTranscription(data.transcription || ""); // Update transcription state
+    } catch (error) {
+      console.error("Error transcribing audio:", error);
+    }
+  };
+
+  // Simulate audio transcription updates (replace with actual audio recorder integration)
+  useEffect(() => {
+    // Example: Simulate transcription updates every 5 seconds
+    const interval = setInterval(() => {
+      setTranscription((prev) => prev + " ...new transcription...");
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const nextPrompt = () => {
     if (currentPromptIndex < scenario.prompts.length - 1) {
@@ -41,11 +66,17 @@ const ScenarioDisplay = ({ scenario }: ScenarioDisplayProps) => {
 
       <Card className="bg-blue-50">
         <CardContent className="p-6">
-          <div className="mb-4 text-sm text-gray-500">
-            Prompt {currentPromptIndex + 1} of {scenario.prompts.length}
+          {/* Placeholder for an image to emulate a conversation */}
+          <div className="h-64 bg-gray-200 flex items-center justify-center">
+            <p className="text-gray-500">[Conversation Image Placeholder]</p>
           </div>
-          <p className="text-xl font-medium">{scenario.prompts[currentPromptIndex]}</p>
-          
+
+          {/* Display transcription below the image */}
+          <div className="mt-4 text-gray-700">
+            <h3 className="font-semibold">Transcription:</h3>
+            <p className="text-sm">{transcription || "Waiting for transcription..."}</p>
+          </div>
+
           <div className="flex justify-between mt-6">
             <Button
               variant="outline"
@@ -65,32 +96,32 @@ const ScenarioDisplay = ({ scenario }: ScenarioDisplayProps) => {
           </div>
         </CardContent>
       </Card>
-      
+
       <div className="flex space-x-4">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => setShowVocab(!showVocab)}
           className="flex-1"
         >
           {showVocab ? "Hide Vocabulary" : "Show Vocabulary"}
         </Button>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => setShowHints(!showHints)}
           className="flex-1"
         >
           {showHints ? "Hide Hints" : "Show Hints"}
         </Button>
       </div>
-      
+
       {showVocab && (
         <div className="mt-4">
           <h3 className="font-semibold text-gray-700 mb-2">Key Vocabulary</h3>
           <div className="flex flex-wrap gap-2">
             {scenario.vocabulary.map((item, index) => (
-              <Badge 
-                key={index} 
-                variant="outline" 
+              <Badge
+                key={index}
+                variant="outline"
                 className="px-2 py-1 bg-white cursor-help"
                 title={item.translation}
               >
@@ -101,7 +132,7 @@ const ScenarioDisplay = ({ scenario }: ScenarioDisplayProps) => {
           <p className="text-xs text-gray-500 mt-2">Hover over words to see translations</p>
         </div>
       )}
-      
+
       {showHints && (
         <div className="mt-4">
           <h3 className="font-semibold text-gray-700 mb-2">Helpful Hints</h3>
