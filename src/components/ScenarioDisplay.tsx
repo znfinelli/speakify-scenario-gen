@@ -194,11 +194,24 @@ const ScenarioDisplay = ({ scenario, language }: ScenarioDisplayProps) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = language; // Use the language prop
     console.log("Language set to:", language); // Debug log
+
+    const voices = window.speechSynthesis.getVoices();
+    console.log("Available voices:", voices); // Debug log
+
+    const selectedVoice = voices.find((voice) => voice.lang === language);
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      console.log("Selected voice:", selectedVoice.name); // Debug log
+    } else {
+      console.warn("No voice found for language:", language); // Debug log
+    }
+
     setIsSpeaking(true);
     utterance.onend = () => {
       console.log("Speech ended"); // Debug log
       setIsSpeaking(false);
     };
+
     window.speechSynthesis.speak(utterance);
   };
 
