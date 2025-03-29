@@ -190,16 +190,24 @@ const ScenarioDisplay = ({ scenario, language }: ScenarioDisplayProps) => {
 
   // Function to handle text-to-speech
   const speakText = (text: string) => {
+    console.log("Speaking text:", text); // Debug log
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = language; // Use the language prop
+    console.log("Language set to:", language); // Debug log
     setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false); // Stop animation when speech ends
+    utterance.onend = () => {
+      console.log("Speech ended"); // Debug log
+      setIsSpeaking(false);
+    };
     window.speechSynthesis.speak(utterance);
   };
 
   // Speak the context when the component loads
   useEffect(() => {
-    speakText(scenario.context);
+    console.log("useEffect triggered with context:", scenario.context); // Debug log
+    if (scenario.context) {
+      speakText(scenario.context);
+    }
   }, [scenario.context, language]); // Add language as a dependency
 
   const nextPrompt = () => {
@@ -230,7 +238,10 @@ const ScenarioDisplay = ({ scenario, language }: ScenarioDisplayProps) => {
         {/* Play button for the current prompt */}
         <div className="w-2/3 flex flex-col items-center space-y-4">
           <Button
-            onClick={() => speakText(scenario.prompts[currentPromptIndex])}
+            onClick={() => {
+              console.log("Play button clicked"); // Debug log
+              speakText(scenario.prompts[currentPromptIndex]);
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white flex items-center space-x-2"
           >
             <Play className="h-5 w-5" />
