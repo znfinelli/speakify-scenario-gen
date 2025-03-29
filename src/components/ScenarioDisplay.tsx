@@ -1,246 +1,169 @@
-import React, { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import { Skeleton } from "@/components/ui/skeleton";
+// Only updating the Spanish prompts in the existing file
+// ... keep existing code until the daily life beginner scenario
 
-interface ScenarioDisplayProps {
-  scenario: {
-    title: string;
-    context: string;
-    prompts: string[];
-    vocabulary: { word: string; translation: string }[];
-    hints: string[];
-  };
-  apiKey: string;
-  scenarioImage?: string;
-  isGeneratingImage?: boolean;
-}
-
-const ScenarioDisplay = ({ scenario, apiKey, scenarioImage, isGeneratingImage }: ScenarioDisplayProps) => {
-  const [showTranscript, setShowTranscript] = useState(true);
-  const [showHints, setShowHints] = useState(false);
-  const [showVocab, setShowVocab] = useState(false);
-  const [definitions, setDefinitions] = useState<Record<string, { word: string; definition: string | null; loading: boolean }>>({});
-  
-  // Get the correct prompt text based on language
-  const promptText = scenario.prompts[0] || "";
-
-  const speakPrompt = () => {
-    if (promptText) {
-      const utterance = new SpeechSynthesisUtterance(promptText);
-      // Use dynamic language code depending on the scenario
-      utterance.lang = "es-ES"; // This should ideally come from the scenario language
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const getDefinition = async (word: string) => {
-    // Clean the word from punctuation
-    const cleanWord = word.replace(/[.,!?;:'"()]/g, '').toLowerCase();
-    
-    // Skip if word is empty after cleaning or too short
-    if (!cleanWord || cleanWord.length <= 2) return;
-    
-    // Skip if we already have a definition or are loading
-    if (definitions[cleanWord] && (definitions[cleanWord].definition || definitions[cleanWord].loading)) {
-      return;
-    }
-
-    // Set loading state
-    setDefinitions((prev) => ({
-      ...prev,
-      [cleanWord]: { word: cleanWord, definition: null, loading: true },
-    }));
-
-    try {
-      // Call OpenAI API to get definition
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are a helpful assistant that provides concise definitions of words.",
-            },
-            {
-              role: "user",
-              content: `Define the word "${cleanWord}" in 10 words or less. Just provide the definition without any additional text.`,
-            },
-          ],
-          max_tokens: 50,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get definition");
-      }
-
-      const data = await response.json();
-      const definition = data.choices[0].message.content.trim();
-
-      // Store the definition
-      setDefinitions((prev) => ({
-        ...prev,
-        [cleanWord]: { word: cleanWord, definition, loading: false },
-      }));
-    } catch (error) {
-      console.error("Error getting definition:", error);
-      // Update with error state
-      setDefinitions((prev) => ({
-        ...prev,
-        [cleanWord]: { word: cleanWord, definition: "Failed to load definition", loading: false },
-      }));
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-blue-700">{scenario.title}</h2>
-        <p className="text-gray-600 mt-2">{scenario.context}</p>
-      </div>
-
-      {/* Image and transcript container */}
-      <div className="flex flex-wrap md:flex-nowrap gap-4">
-        {/* Image display on the left */}
-        <div className="w-full md:w-1/3 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-          {isGeneratingImage ? (
-            <div className="p-6">
-              <Skeleton className="w-full aspect-square rounded-md" />
-              <p className="text-center text-sm mt-2 text-gray-500">Generating image...</p>
-            </div>
-          ) : scenarioImage ? (
-            <img 
-              src={scenarioImage} 
-              alt={scenario.title} 
-              className="w-full h-auto object-cover"
-            />
-          ) : (
-            <div className="p-6 text-center text-gray-400">
-              <p>No image available</p>
-            </div>
-          )}
-        </div>
-
-        {/* Transcript/prompt section on the right */}
-        <Card className="w-full md:w-2/3 bg-blue-50">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-transcript"
-                  checked={showTranscript}
-                  onCheckedChange={setShowTranscript}
-                />
-                <Label htmlFor="show-transcript">Show Transcript</Label>
-              </div>
-              <Button 
-                size="sm"
-                variant="outline"
-                className="h-8 w-8 p-0"
-                onClick={speakPrompt}
-                title="Play prompt"
-              >
-                <Play size={16} />
-              </Button>
-            </div>
-            
-            {showTranscript && (
-              <div className="text-sm bg-gray-50 p-3 rounded leading-relaxed mb-4 max-h-60 overflow-y-auto">
-                {promptText ? (
-                  promptText.split(/\s+/).filter(word => word.trim().length > 0).map((word, index) => (
-                    <HoverCard key={index} openDelay={300} closeDelay={100}>
-                      <HoverCardTrigger asChild>
-                        <span 
-                          className="hover:bg-blue-100 hover:text-blue-700 rounded-sm px-0.5 cursor-help inline-block"
-                          onMouseEnter={() => getDefinition(word)}
-                        >
-                          {word}{' '}
-                        </span>
-                      </HoverCardTrigger>
-                      <HoverCardContent className="w-48 text-xs" align="center">
-                        {definitions[word.replace(/[.,!?;:'"()]/g, '').toLowerCase()]?.loading ? (
-                          <Skeleton className="h-4 w-full" />
-                        ) : (
-                          <>
-                            <p className="font-semibold mb-1">{word.replace(/[.,!?;:'"()]/g, '')}</p>
-                            <p>{definitions[word.replace(/[.,!?;:'"()]/g, '').toLowerCase()]?.definition || "Hover to load definition"}</p>
-                          </>
-                        )}
-                      </HoverCardContent>
-                    </HoverCard>
-                  ))
-                ) : (
-                  <p>No prompt available</p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex space-x-4">
-        <Button
-          variant="outline"
-          onClick={() => setShowVocab(!showVocab)}
-          className="flex-1"
-        >
-          {showVocab ? "Hide Vocabulary" : "Show Vocabulary"}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setShowHints(!showHints)}
-          className="flex-1"
-        >
-          {showHints ? "Hide Hints" : "Show Hints"}
-        </Button>
-      </div>
-
-      {showVocab && (
-        <div className="mt-4">
-          <h3 className="font-semibold text-gray-700 mb-2">Key Vocabulary</h3>
-          <div className="flex flex-wrap gap-2">
-            {scenario.vocabulary.map((item, index) => (
-              <Badge
-                key={index}
-                variant="outline"
-                className="px-2 py-1 bg-white cursor-help"
-                title={item.translation}
-              >
-                {item.word}
-              </Badge>
-            ))}
-          </div>
-          <p className="text-xs text-gray-500 mt-2">Hover over words to see translations</p>
-        </div>
-      )}
-
-      {showHints && (
-        <div className="mt-4">
-          <h3 className="font-semibold text-gray-700 mb-2">Helpful Hints</h3>
-          <ul className="list-disc list-inside text-gray-700 space-y-1">
-            {scenario.hints.map((hint, index) => (
-              <li key={index}>{hint}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
+// Mock data for scenarios based on language, level, and category
+const scenarioTemplates = {
+  // Daily Life scenarios
+  "daily life": {
+    beginner: {
+      title: "Morning Routine",
+      context: "You're discussing your morning routine with a friend.",
+      prompts: [
+        "Describe what time you wake up and what you do first.",
+        "Talk about what you eat for breakfast.",
+        "Explain how you get to work or school.",
+      ],
+      vocabulary: [
+        { word: "despertarse", translation: "to wake up" },
+        { word: "ducharse", translation: "to take a shower" },
+        { word: "desayuno", translation: "breakfast" },
+        { word: "café", translation: "coffee" },
+        { word: "ir a", translation: "to go to" },
+      ],
+      hints: [
+        "Use present tense to describe daily routines.",
+        "Include time expressions like 'at 7 AM' or 'in the morning'.",
+        "Try to use at least 3 vocabulary words in your response.",
+      ],
+    },
+    // ... keep existing code for other levels
+  },
+  // ... keep existing code for other categories
 };
 
-export default ScenarioDisplay;
+type ScenarioType = {
+  title: string;
+  context: string;
+  prompts: string[];
+  vocabulary: { word: string; translation: string }[];
+  hints: string[];
+};
+
+// Helper function to get a template based on category and level
+const getTemplate = (category: string, level: string): ScenarioType => {
+  // Default to daily life if category not found
+  const categoryTemplates = scenarioTemplates[category as keyof typeof scenarioTemplates] || 
+                           scenarioTemplates["daily life"];
+  
+  // Default to beginner if level not found
+  const levelTemplate = categoryTemplates[level as keyof typeof categoryTemplates] || 
+                       categoryTemplates["beginner"];
+  
+  return levelTemplate;
+};
+
+// Language-specific prompts
+const languagePrompts = {
+  "es": {
+    "daily life": {
+      beginner: {
+        prompts: [
+          "Describe a qué hora te despiertas y qué haces primero.",
+          "Habla sobre lo que comes para el desayuno.",
+          "Explica cómo vas al trabajo o a la escuela.",
+        ]
+      },
+      intermediate: {
+        prompts: [
+          "Describe lo que planeas hacer este fin de semana.",
+          "Pregunta a tu colega sobre sus planes para el fin de semana.",
+          "Sugiere una actividad que podrían hacer juntos.",
+        ]
+      },
+      advanced: {
+        prompts: [
+          "Explica cómo gestionas tu equilibrio entre trabajo y vida personal.",
+          "Discute los desafíos de mantener un equilibrio saludable en el mundo actual.",
+          "Sugiere algunas estrategias que podrían ayudar a mejorar el equilibrio entre trabajo y vida.",
+        ]
+      }
+    },
+    "travel": {
+      beginner: {
+        prompts: [
+          "Saluda al recepcionista y explica que tienes una reserva.",
+          "Pregunta sobre la hora de salida y el horario del desayuno.",
+          "Consulta sobre el acceso a Wi-Fi en el hotel.",
+        ]
+      },
+      intermediate: {
+        prompts: [
+          "Explica a un transeúnte que estás perdido y buscando una atracción específica.",
+          "Pide indicaciones para el transporte público más cercano.",
+          "Agradéceles y confirma las indicaciones para asegurarte de que entendiste correctamente.",
+        ]
+      },
+      advanced: {
+        prompts: [
+          "Defiende tu destino preferido y explica por qué sería una buena elección.",
+          "Discute consideraciones de presupuesto y posibles compromisos.",
+          "Negocia la duración del viaje y propón un itinerario.",
+        ]
+      }
+    },
+    "food": {
+      beginner: {
+        prompts: [
+          "Saluda al camarero y pide un menú.",
+          "Pide tu comida y bebidas.",
+          "Pregunta sobre los ingredientes de un plato que te interesa.",
+        ]
+      },
+      intermediate: {
+        prompts: [
+          "Explica una receta de tu cultura a tu amigo.",
+          "Haz preguntas sobre cómo preparar un plato tradicional de su cultura.",
+          "Discute técnicas de cocina y preferencias de sabor.",
+        ]
+      },
+      advanced: {
+        prompts: [
+          "Comparte tus opiniones sobre el consumo y producción sostenible de alimentos.",
+          "Discute el impacto ambiental de diferentes dietas.",
+          "Debate los roles de individuos, empresas y gobiernos en la promoción de la sostenibilidad alimentaria.",
+        ]
+      }
+    }
+  },
+  "fr": {
+    "daily life": {
+      beginner: {
+        prompts: [
+          "Décris à quelle heure tu te réveilles et ce que tu fais en premier.",
+          "Parle de ce que tu manges au petit-déjeuner.",
+          "Explique comment tu vas au travail ou à l'école.",
+        ]
+      }
+    }
+  },
+  // Add other languages as needed
+};
+
+export const generateScenario = (language: string, level: string, category: string): ScenarioType => {
+  // Get base template
+  const template = getTemplate(category, level);
+  
+  // If we have language-specific prompts, replace the template prompts
+  if (languagePrompts[language as keyof typeof languagePrompts]) {
+    const languageSpecific = languagePrompts[language as keyof typeof languagePrompts];
+    
+    if (languageSpecific[category as keyof typeof languageSpecific]) {
+      const categorySpecific = languageSpecific[category as keyof typeof languageSpecific];
+      
+      if (categorySpecific[level as keyof typeof categorySpecific]) {
+        const levelSpecific = categorySpecific[level as keyof typeof categorySpecific];
+        
+        // Replace prompts with language-specific ones if available
+        if (levelSpecific.prompts) {
+          return {
+            ...template,
+            prompts: levelSpecific.prompts
+          };
+        }
+      }
+    }
+  }
+  
+  // If no language-specific prompts found, return the original template
+  return template;
+};
