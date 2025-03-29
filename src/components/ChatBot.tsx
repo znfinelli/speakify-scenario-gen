@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import AnimatedBot from "./AnimatedBot";
+import Transcript from "./Transcript";
 
 type Message = {
   id: string;
@@ -35,6 +37,13 @@ const ChatBot = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+
+  // Get the last bot message for transcript
+  const lastBotMessage = messages
+    .filter(msg => msg.sender === "bot")
+    .slice(-1)[0]?.text || "";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -85,8 +94,62 @@ const ChatBot = () => {
     }
   };
 
+  const playLastMessage = () => {
+    if (lastBotMessage) {
+      speakText(lastBotMessage);
+    }
+  };
+
+  const handleApiKeySubmit = () => {
+    if (apiKey.trim()) {
+      setShowApiKeyInput(false);
+    }
+  };
+
   return (
     <>
+      {showApiKeyInput && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h3 className="text-lg font-semibold mb-4">Enter OpenAI API Key</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Your API key is required for the transcript definitions feature.
+              It will only be stored in your browser's memory.
+            </p>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-..."
+              className="w-full p-2 border rounded mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowApiKeyInput(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleApiKeySubmit}>Submit</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!apiKey && !showApiKeyInput && (
+        <Button
+          className="fixed top-4 right-4 z-40"
+          onClick={() => setShowApiKeyInput(true)}
+        >
+          Set API Key for Transcript
+        </Button>
+      )}
+
+      {apiKey && (
+        <Transcript 
+          text={lastBotMessage} 
+          onPlay={playLastMessage} 
+          apiKey={apiKey} 
+        />
+      )}
+
       <Drawer open={isOpen} onOpenChange={setIsOpen}>
         <DrawerTrigger asChild>
           <Button
